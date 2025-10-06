@@ -1,4 +1,6 @@
+-- =============================================
 -- БАЗОВЫЕ ОПЕРАЦИИ SELECT
+-- =============================================
 
 -- 1. Получить всех активных пользователей
 SELECT user_id, username, email, first_name, last_name, role_id
@@ -26,7 +28,9 @@ FROM "Order" o
 JOIN "User" u ON o.user_id = u.user_id
 WHERE u.user_id = 3;
 
+-- =============================================
 -- ОПЕРАЦИИ ВСТАВКИ (INSERT)
+-- =============================================
 
 -- 6. Добавить нового пользователя
 INSERT INTO "User" (username, email, password_hash, first_name, last_name, role_id)
@@ -41,7 +45,9 @@ VALUES ('Спатифиллум', 'Spathiphyllum', 'Растение с белы
 INSERT INTO CartItem (cart_id, plant_id, quantity)
 VALUES (1, 3, 1);
 
+-- =============================================
 -- ОПЕРАЦИИ ОБНОВЛЕНИЯ (UPDATE)
+-- =============================================
 
 -- 9. Обновить цену растения
 UPDATE Plant SET price = 2700.00 WHERE plant_id = 1;
@@ -52,7 +58,9 @@ UPDATE "Order" SET status = 'Выполнен' WHERE order_id = 2;
 -- 11. Обновить количество товара на складе после покупки
 UPDATE Plant SET stock_quantity = stock_quantity - 1 WHERE plant_id = 1;
 
+-- =============================================
 -- ОПЕРАЦИИ УДАЛЕНИЯ (DELETE)
+-- =============================================
 
 -- 12. Удалить элемент из корзины
 DELETE FROM CartItem WHERE cart_item_id = 1;
@@ -60,7 +68,9 @@ DELETE FROM CartItem WHERE cart_item_id = 1;
 -- 13. Деактивировать пользователя
 UPDATE "User" SET is_active = FALSE WHERE user_id = 5;
 
+-- =============================================
 -- СЛОЖНЫЕ ЗАПРОСЫ
+-- =============================================
 
 -- 14. Получить топ-5 самых дорогих растений
 SELECT name, price, scientific_name
@@ -95,9 +105,10 @@ JOIN "User" u ON c.user_id = u.user_id
 JOIN Plant p ON ci.plant_id = p.plant_id
 WHERE u.user_id = 3;
 
--- 18. Получить детали заказа с товарами
+-- 18. Получить детали заказа с товарами (ИСПРАВЛЕНО - используем представление для subtotal)
 SELECT o.order_id, o.order_date, o.status,
-       p.name as product_name, oi.quantity, oi.unit_price, oi.subtotal
+       p.name as product_name, oi.quantity, oi.unit_price, 
+       (oi.quantity * oi.unit_price) as subtotal
 FROM "Order" o
 JOIN OrderItem oi ON o.order_id = oi.order_id
 JOIN Plant p ON oi.plant_id = p.plant_id
@@ -110,7 +121,7 @@ SELECT u.first_name, u.last_name, u.email,
 FROM "User" u
 LEFT JOIN "Order" o ON u.user_id = o.user_id
 WHERE u.role_id = 3
-GROUP BY u.user_id
+GROUP BY u.user_id, u.first_name, u.last_name, u.email
 ORDER BY order_count DESC, total_spent DESC;
 
 -- 20. Получить растения с руководствами по уходу
@@ -120,7 +131,9 @@ JOIN PlantCare pc ON p.plant_id = pc.plant_id
 JOIN CareGuide cg ON pc.guide_id = cg.guide_id
 ORDER BY p.name, pc.priority;
 
+-- =============================================
 -- АГРЕГАТНЫЕ ЗАПРОСЫ
+-- =============================================
 
 -- 21. Общее количество товаров на складе
 SELECT SUM(stock_quantity) as total_stock FROM Plant WHERE is_available = TRUE;
@@ -143,7 +156,9 @@ LEFT JOIN Plant p ON s.supplier_id = p.supplier_id AND p.is_available = TRUE
 GROUP BY s.supplier_id, s.company_name
 ORDER BY product_count DESC;
 
+-- =============================================
 -- ЗАПРОСЫ С ФИЛЬТРАЦИЕЙ И СОРТИРОВКОЙ
+-- =============================================
 
 -- 24. Растения в ценовом диапазоне
 SELECT name, price, care_level, light_requirements
@@ -164,9 +179,11 @@ FROM "Order"
 WHERE order_date >= CURRENT_DATE - INTERVAL '30 days'
 ORDER BY order_date DESC;
 
+-- =============================================
 -- ТРАНЗАКЦИОННЫЕ ОПЕРАЦИИ
+-- =============================================
 
--- 27. Оформление заказа из корзины (пример транзакции)
+-- 27. Оформление заказа из корзины (пример транзакции) - ИСПРАВЛЕНО
 BEGIN;
 
 -- Создание заказа
@@ -174,9 +191,9 @@ INSERT INTO "Order" (user_id, total_amount, status, delivery_address_id, shippin
 VALUES (3, 4100.00, 'Ожидает оплаты', 1, 300.00)
 RETURNING order_id;
 
--- Перенос товаров из корзины в заказ
-INSERT INTO OrderItem (order_id, plant_id, quantity, unit_price, subtotal)
-SELECT 4, ci.plant_id, ci.quantity, p.price, (ci.quantity * p.price)
+-- Перенос товаров из корзины в заказ (ИСПРАВЛЕНО - без subtotal)
+INSERT INTO OrderItem (order_id, plant_id, quantity, unit_price)
+SELECT 4, ci.plant_id, ci.quantity, p.price
 FROM CartItem ci
 JOIN Plant p ON ci.plant_id = p.plant_id
 WHERE ci.cart_id = 1;

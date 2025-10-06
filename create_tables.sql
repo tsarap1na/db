@@ -2,8 +2,19 @@
 CREATE TABLE Role (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(50) NOT NULL UNIQUE,
-    description TEXT,
-    permissions TEXT
+    description TEXT
+);
+
+CREATE TABLE Permission (
+    permission_id SERIAL PRIMARY KEY,
+    permission_name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT
+);
+
+CREATE TABLE RolePermission (
+    role_id INTEGER NOT NULL REFERENCES Role(role_id),
+    permission_id INTEGER NOT NULL REFERENCES Permission(permission_id),
+    PRIMARY KEY (role_id, permission_id)
 );
 
 -- Создание таблицы пользователей
@@ -102,9 +113,7 @@ CREATE TABLE OrderItem (
     order_id INTEGER NOT NULL REFERENCES "Order"(order_id),
     plant_id INTEGER NOT NULL REFERENCES Plant(plant_id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
-    unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0),
-    subtotal DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
-    CONSTRAINT chk_subtotal CHECK (subtotal = quantity * unit_price)
+    unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0)
 );
 
 -- Создание таблицы руководств по уходу
